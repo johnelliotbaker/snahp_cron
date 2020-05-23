@@ -4,11 +4,10 @@ import time
 import json
 import os
 import datetime
-from pathlib import Path
 
 ENABLE_LOG = False
-LOGFILE = Path("log.txt")
-CREDENTIAL_FILE = Path("credential.json")
+LOGFILE = "log.txt"
+CREDENTIAL_FILE = "credential.json"
 
 
 class Logger(object):
