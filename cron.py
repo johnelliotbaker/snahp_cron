@@ -133,31 +133,31 @@ class Cron(object):
         self.cron_url = host_url + Cron.URL_CRON_EXTRA
 
     def login(self):
-        print(f"Signing in to {self.host_url} as {self.username} ...")
+        print("Signing in to {} as {} ...".format(self.host_url, self.username))
         resp = self._get_login_form()
         self.logger.prepend("Logging In", caption="login")
         form_data = self._parse_login_form_response(resp)
         resp = self._post_login_form(form_data)
         if not self._verify_login(resp):
             raise Cron.LoginFailError(self.username)
-        print(f"    Success")
+        print("    Success")
         self.logger.prepend("Success", caption="login")
 
     def trigger_cron(self):
-        print(f"Triggering Cron Jobs ...")
+        print("Triggering Cron Jobs ...")
         resp = self._get(self.cron_url)
         self.logger.prepend("Triggering Cron", caption="trigger_cron")
         success = self._verify_cron_success(resp.text)
         if success:
-            print(f"    Success")
+            print("    Success")
             self.logger.prepend("Success", caption="trigger_cron")
         else:
-            print(f"    Failure")
+            print("    Failure")
             self.logger.prepend("Failure", caption="trigger_cron")
 
     def login_with_credential_file(self, filepath):
-        print(f"\n\n")
-        print(f"Using credential {filepath} ...")
+        print("\n\n")
+        print("Using credential {} ...".format(filepath))
         with open(filepath, "r", encoding="utf8") as f:
             data = json.loads(f.read())
         self._set_account_info(data["host_url"], data["username"], data["password"])
