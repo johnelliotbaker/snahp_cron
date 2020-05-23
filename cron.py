@@ -38,19 +38,14 @@ class Logger(object):
         return datetime.datetime.now().strftime("%D %T.%f")
 
     def _generate_stamp(self, caption=""):
-        def tab(strn):
-            return "    " + str(strn) if strn != "" else ""
-
-        dt = datetime.datetime.now()
-        strn = f"""\
-{'='*70}
-{tab(caption)}
-{tab(self._index)}
-{tab(dt)}
-{'_'*70}\n
-"""
-        self._index += 1
-        return strn
+        return ""
+        #  def tab(strn):
+        #      return "    " + str(strn) if strn != "" else ""
+        #
+        #  dt = datetime.datetime.now()
+        #  strn = f"""\ {'='*70} {tab(caption)} {tab(self._index)} {tab(dt)} {'_'*70}\n """
+        #  self._index += 1
+        #  return strn
 
     def prepend(self, strn, caption="", pad=0):
         timestamp = self._generate_timestamp()
@@ -82,10 +77,8 @@ class Cron(object):
             self.username = username
 
         def __str__(self):
-            return f"""\
-#####################################
-Could not login with username:
-{self.username}"""
+            return "Could not loging with the credentials."
+            #  return f"""\ ##################################### Could not login with username: {self.username}"""
 
     def __init__(self):
         self.client = requests.session()
