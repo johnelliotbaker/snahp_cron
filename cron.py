@@ -2,65 +2,13 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import json
-import os
-import datetime
-from pathlib import Path
-
-ENABLE_LOG = False
-LOGFILE = Path("log.txt")
-CREDENTIAL_FILE = Path("credential.json")
+from logger import logger
 
 
-class Logger(object):
+print_debug = logger.debug
 
-    """Docstring for Logger. """
 
-    def __init__(self, logfile):
-        self._enabled = False
-        self._logfile = logfile
-        self._index = 0
-        if not os.path.exists(logfile):
-            with open(logfile, "w"):
-                pass
-
-    def enable(self):
-        self._enabled = True
-
-    def disable(self):
-        self._enabled = False
-
-    def wipe(self):
-        if self._enabled:
-            with open(self._logfile, "w"):
-                pass
-
-    def _generate_timestamp(self):
-        return datetime.datetime.now().strftime("%D %T.%f")
-
-    def _generate_stamp(self, caption=""):
-        def tab(strn):
-            return "    " + str(strn) if strn != "" else ""
-
-        dt = datetime.datetime.now()
-        strn = f"""\
-{'='*70}
-{tab(caption)}
-{tab(self._index)}
-{tab(dt)}
-{'_'*70}\n
-"""
-        self._index += 1
-        return strn
-
-    def prepend(self, strn, caption="", pad=0):
-        timestamp = self._generate_timestamp()
-        if self._enabled:
-            with open(self._logfile, "r", encoding="utf8") as f:
-                data = timestamp + " ::: " + strn + "\n" * (int(pad) + 1)
-                data += f.read()
-
-            with open(self._logfile, "w", encoding="utf8") as f:
-                f.write(data)
+CREDENTIAL_FILE = "credential.json"
 
 
 class Cron(object):
@@ -77,15 +25,13 @@ class Cron(object):
     URL_LOGIN_EXTRA = "ucp.php?mode=login"
     URL_CRON_EXTRA = "app.php/snahp/cron/hourly/"
 
-    class LoginFailError(Exception):
+    class LoginError(Exception):
         def __init__(self, username):
             self.username = username
+            logger.error(str(self))
 
         def __str__(self):
-            return f"""\
-#####################################
-Could not login with username:
-{self.username}"""
+            return 'Could not login as "{}"'.format(self.username)
 
     def __init__(self):
         self.client = requests.session()
@@ -140,47 +86,34 @@ Could not login with username:
         self.cron_url = host_url + Cron.URL_CRON_EXTRA
 
     def login(self):
-        print(f"Signing in to {self.host_url} as {self.username} ...")
+        print_debug("Signing in to {} as {} ...".format(self.host_url, self.username))
         resp = self._get_login_form()
-        self.logger.prepend("Logging In", caption="login")
         form_data = self._parse_login_form_response(resp)
         resp = self._post_login_form(form_data)
         if not self._verify_login(resp):
-            raise Cron.LoginFailError(self.username)
-        print(f"    Success")
-        self.logger.prepend("Success", caption="login")
+            raise Cron.LoginError(self.username)
+        print_debug("Success")
 
     def trigger_cron(self):
-        print(f"Triggering Cron Jobs ...")
+        print_debug("Triggering Cron Jobs ...")
         resp = self._get(self.cron_url)
-        self.logger.prepend("Triggering Cron", caption="trigger_cron")
         success = self._verify_cron_success(resp.text)
         if success:
-            print(f"    Success")
-            self.logger.prepend("Success", caption="trigger_cron")
+            print_debug("Success")
         else:
-            print(f"    Failure")
-            self.logger.prepend("Failure", caption="trigger_cron")
+            logger.error("Failure")
 
     def login_with_credential_file(self, filepath):
-        print(f"\n\n")
-        print(f"Using credential {filepath} ...")
+        print("\n\n")
+        logger.info("Attempting login with {} ...".format(filepath))
         with open(filepath, "r", encoding="utf8") as f:
             data = json.loads(f.read())
         self._set_account_info(data["host_url"], data["username"], data["password"])
         self.login()
 
-    def attach_logger(self, logfile):
-        self.logger = Logger(logfile)
-
 
 def main():
     cron = Cron()
-    cron.attach_logger(LOGFILE)
-    cron.logger.disable()
-    if ENABLE_LOG:
-        cron.logger.enable()
-        #  cron.logger.wipe()
     cron.login_with_credential_file(CREDENTIAL_FILE)
     cron.trigger_cron()
 
